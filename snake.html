@@ -172,6 +172,8 @@ const KEY_MAP = {
 
 let snake, food, direction, nextDirection, score, best, gameLoop, running, paused;
 let particles = [];
+let lastUpdate = 0;
+const SPEED = 150; // ms between game ticks
 
 best = parseInt(localStorage.getItem("snakeBest") || "0");
 bestEl.textContent = best;
@@ -191,6 +193,7 @@ function initGame() {
   running = true;
   paused = false;
   particles = [];
+  lastUpdate = performance.now();
   scoreEl.textContent = "0";
   overlay.classList.remove("active");
   placeFood();
@@ -334,10 +337,17 @@ function win() {
   overlay.classList.add("active");
 }
 
-function tick() {
-  if (running && !paused) { update(); draw(); }
-  else if (paused) { draw(); }
+function tick(now) {
   requestAnimationFrame(tick);
+
+  const elapsed = now - lastUpdate;
+
+  if (running && !paused && elapsed >= SPEED) {
+    lastUpdate = now;
+    update();
+  }
+
+  draw();
 }
 
 document.addEventListener("keydown", e => {
@@ -346,7 +356,10 @@ document.addEventListener("keydown", e => {
     nextDirection = DIR[KEY_MAP[e.key]];
   } else if (e.key === " " || e.key === "Spacebar") {
     e.preventDefault();
-    if (running) paused = !paused;
+    if (running) {
+      paused = !paused;
+      if (!paused) lastUpdate = performance.now();
+    }
   } else if (e.key === "r" || e.key === "R") {
     e.preventDefault();
     initGame();
